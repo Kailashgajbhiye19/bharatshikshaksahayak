@@ -8,6 +8,7 @@ import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/register_page.dart';
 import 'features/auth/presentation/pages/forgot_password_page.dart';
 import 'features/onboarding/presentation/pages/language_page.dart';
+import 'features/onboarding/presentation/pages/splash_page.dart';
 import 'features/home/presentation/pages/home_page.dart';
 import 'features/attendance/presentation/pages/attendance_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
@@ -43,8 +44,12 @@ class MyApp extends StatelessWidget {
 }
 
 final _router = GoRouter(
-  initialLocation: Hive.box('settings').get('language') != null ? '/login' : '/onboarding',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/splash',
+      builder: (context, state) => const SplashPage(),
+    ),
     GoRoute(
       path: '/onboarding',
       builder: (context, state) => const LanguagePage(),
