@@ -15,8 +15,8 @@ class ScanService {
 
   ScanService(this._ref);
 
-  Future<ScanResult?> scanImage(String title) async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+  Future<ScanResult?> scanImage(String title, {required ImageSource source}) async {
+    final XFile? image = await _picker.pickImage(source: source);
     if (image == null) return null;
 
     final inputImage = InputImage.fromFilePath(image.path);

@@ -6,14 +6,18 @@ import '../../../profile/presentation/pages/profile_page.dart';
 import '../../../scan/presentation/pages/scan_center_page.dart';
 import '../../../history/presentation/pages/history_page.dart';
 
-class HomePage extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../../../features/history/presentation/providers/history_provider.dart';
+
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   int _currentIndex = 0;
 
   late final List<Widget> _pages;
@@ -148,12 +152,14 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class _DashboardTab extends StatelessWidget {
+class _DashboardTab extends ConsumerWidget {
   final VoidCallback onScanTap;
   const _DashboardTab({required this.onScanTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentScans = ref.watch(historyProvider).take(2).toList();
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -272,16 +278,22 @@ class _DashboardTab extends StatelessWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            const _RecentActivityTile(
-              icon: Icons.science,
-              title: "Class 8 Science Notes",
-              subtitle: "Scanned 2 hours ago",
-            ),
-            const _RecentActivityTile(
-              icon: Icons.calculate,
-              title: "Math Quiz Generation",
-              subtitle: "Completed Yesterday",
-            ),
+            if (recentScans.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Center(
+                  child: Text(
+                    "No recent scans yet.",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              )
+            else
+              ...recentScans.map((scan) => _RecentActivityTile(
+                    icon: Icons.document_scanner,
+                    title: scan.title,
+                    subtitle: "Scanned ${DateFormat('hh:mm a').format(scan.date)}",
+                  )),
           ],
         ),
       ),

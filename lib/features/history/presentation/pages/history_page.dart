@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/history_provider.dart';
+
+import 'package:school_lookup_app/features/scan/domain/models/scan_result.dart';
 
 class HistoryPage extends ConsumerWidget {
   const HistoryPage({super.key});
@@ -22,10 +25,15 @@ class HistoryPage extends ConsumerWidget {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Sync Data'),
-                  content: const Text('This will upload your data and clear local history. Continue?'),
+                  content: const Text(
+                      'This will upload your data and clear local history. Continue?'),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sync')),
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel')),
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Sync')),
                   ],
                 ),
               );
@@ -34,7 +42,8 @@ class HistoryPage extends ConsumerWidget {
                 await ref.read(historyProvider.notifier).syncAndClear();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('History synced and cleared successfully.')),
+                    const SnackBar(
+                        content: Text('History synced and cleared successfully.')),
                   );
                 }
               }
@@ -44,44 +53,169 @@ class HistoryPage extends ConsumerWidget {
       ),
       body: history.isEmpty
           ? const Center(child: Text('No scan history found.'))
-          : ListView.builder(
-              itemCount: history.length,
-              itemBuilder: (context, index) {
-                final item = history[index];
-                return ListTile(
-                  leading: const Icon(Icons.document_scanner),
-                  title: Text(item.title),
-                  subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(item.date)),
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (context) => DraggableScrollableSheet(
-                        expand: false,
-                        builder: (context, scrollController) => Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: SingleChildScrollView(
-                            controller: scrollController,
+          : Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.75,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: history.length,
+                itemBuilder: (context, index) {
+                  final item = history[index];
+                  return Card(
+                    clipBehavior: Clip.antiAlias,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    elevation: 2,
+                    child: InkWell(
+                      onTap: () => _showDocumentDetail(context, item),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: File(item.imagePath).existsSync()
+                                ? Image.file(
+                                    File(item.imagePath),
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    color: Colors.grey.shade200,
+                                    child: const Icon(Icons.image_not_supported,
+                                        size: 40, color: Colors.grey),
+                                  ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(item.title, style: Theme.of(context).textTheme.headlineSmall),
-                                const SizedBox(height: 8),
-                                Text(DateFormat('MMMM dd, yyyy - HH:mm').format(item.date)),
-                                const Divider(height: 32),
-                                const Text('Recognized Text:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 8),
-                                Text(item.text),
+                                Text(
+                                  item.title,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  DateFormat('MMM dd, yyyy').format(item.date),
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Colors.grey),
+                                ),
                               ],
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+    );
+  }
+
+  void _showDocumentDetail(BuildContext context, ScanResult item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                height: 4,
+                width: 40,
+                decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(item.title,
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (File(item.imagePath).existsSync())
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          File(item.imagePath),
+                          fit: BoxFit.contain,
                         ),
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        const Icon(Icons.text_fields, color: Colors.blue),
+                        const SizedBox(width: 8),
+                        Text('Recognized Content',
+                            style: Theme.of(context).textTheme.titleMedium),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Text(
+                        item.text,
+                        style: const TextStyle(height: 1.5),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        // Action for sharing or exporting
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Exporting to PDF... (Simulation)')),
+                        );
+                      },
+                      icon: const Icon(Icons.picture_as_pdf),
+                      label: const Text('Share as PDF'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
