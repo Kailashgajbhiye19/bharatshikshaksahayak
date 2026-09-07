@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/history_provider.dart';
+import '../../../../core/localization/app_localization.dart';
 
 import 'package:school_lookup_app/features/scan/domain/models/scan_result.dart';
 
@@ -12,26 +13,26 @@ class HistoryPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(historyProvider);
+    final l10n = ref.watch(l10nProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan History'),
+        title: Text(l10n.tr('history')),
         actions: [
           IconButton(
             icon: const Icon(Icons.sync),
-            tooltip: 'Upload & Clear Sync',
+            tooltip: l10n.tr('sync_data'),
             onPressed: () async {
               // 1. Initial Confirmation
               final startSync = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Sync Data'),
-                  content: const Text(
-                      'Do you want to start uploading your documents to the server?'),
+                  title: Text(l10n.tr('sync_data')),
+                  content: Text(l10n.tr('upload_confirm')),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel')),
+                        child: Text(l10n.tr('cancel'))),
                     TextButton(
                         onPressed: () => Navigator.pop(context, true),
                         child: const Text('Start Upload')),
@@ -46,13 +47,13 @@ class HistoryPage extends ConsumerWidget {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => const AlertDialog(
+                  builder: (context) => AlertDialog(
                     content: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 20),
-                        Text("Uploading documents..."),
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 20),
+                        Text(l10n.tr('uploading')),
                       ],
                     ),
                   ),
@@ -71,18 +72,17 @@ class HistoryPage extends ConsumerWidget {
                 final uploadSuccessful = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Upload Successful?'),
-                    content: const Text(
-                        'Please confirm if all your documents and images were uploaded successfully. \n\nWarning: Confirming will permanently delete local history to start a fresh 30-day cycle.'),
+                    title: Text(l10n.tr('upload_success_title')),
+                    content: Text(l10n.tr('upload_success_desc')),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: const Text('No, Not Yet'),
+                        child: Text(l10n.tr('no_not_yet')),
                       ),
                       ElevatedButton(
                         onPressed: () => Navigator.pop(context, true),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                        child: const Text('Confirm & Delete Local'),
+                        child: Text(l10n.tr('confirm_delete')),
                       ),
                     ],
                   ),
@@ -105,7 +105,7 @@ class HistoryPage extends ConsumerWidget {
         ],
       ),
       body: history.isEmpty
-          ? const Center(child: Text('No scan history found.'))
+          ? Center(child: Text(l10n.tr('no_recent_scans')))
           : Padding(
               padding: const EdgeInsets.all(12.0),
               child: GridView.builder(

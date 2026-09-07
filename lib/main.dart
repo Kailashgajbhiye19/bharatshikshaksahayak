@@ -15,16 +15,25 @@ import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/library/presentation/pages/library_page.dart';
 import 'features/scan/domain/models/scan_result.dart';
 import 'features/scan/data/repositories/scan_repository.dart';
+import 'core/util/app_logger.dart';
 
 void main() async {
+  // --- Global Error Handling for Production ---
+  FlutterError.onError = (details) {
+    AppLogger.error("Flutter Error: ${details.exception}", details.exception, details.stack);
+  };
+
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
   
-  Hive.registerAdapter(ScanResultAdapter());
-  await Hive.openBox<ScanResult>(ScanRepository.boxName);
-  
-  // Open settings box for language preference
-  await Hive.openBox('settings');
+  try {
+    await Hive.initFlutter();
+    Hive.registerAdapter(ScanResultAdapter());
+    await Hive.openBox<ScanResult>(ScanRepository.boxName);
+    await Hive.openBox('settings');
+    AppLogger.info("Local storage initialized successfully.");
+  } catch (e) {
+    AppLogger.error("Local storage initialization failed.", e);
+  }
 
   runApp(const ProviderScope(child: MyApp()));
 }

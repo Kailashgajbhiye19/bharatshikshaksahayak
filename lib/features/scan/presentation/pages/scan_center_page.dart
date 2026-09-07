@@ -1,41 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/localization/app_localization.dart';
 import '../providers/scan_provider.dart';
 import '../providers/qr_scan_service.dart';
-import '../../../../core/theme/app_theme.dart';
 
+/// [ScanCenterPage] provides various digitization tools for teachers.
+/// It supports OCR (Text Recognition) and QR Code scanning with live camera or gallery upload.
 class ScanCenterPage extends ConsumerWidget {
   const ScanCenterPage({super.key});
 
-  Future<ImageSource?> _showSourcePicker(BuildContext context) async {
+  /// Displays a selection menu for image source (Camera vs Gallery).
+  Future<ImageSource?> _showSourcePicker(BuildContext context, AppLocalization l10n) async {
     return await showModalBottomSheet<ImageSource>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                "Select Source",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+              const Text("Select Source", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _SourceOption(
-                    icon: Icons.camera_alt,
-                    label: "Camera",
+                    icon: Icons.camera_alt, label: "Camera",
                     onTap: () => Navigator.pop(context, ImageSource.camera),
                   ),
                   _SourceOption(
-                    icon: Icons.photo_library,
-                    label: "Gallery",
+                    icon: Icons.photo_library, label: "Gallery",
                     onTap: () => Navigator.pop(context, ImageSource.gallery),
                   ),
                 ],
@@ -47,140 +45,113 @@ class ScanCenterPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleScan(BuildContext context, WidgetRef ref, String title) async {
-    final source = await _showSourcePicker(context);
+  /// Triggers the document/text scanning flow.
+  Future<void> _handleScan(BuildContext context, WidgetRef ref, String title, AppLocalization l10n) async {
+    final source = await _showSourcePicker(context, l10n);
     if (source == null) return;
 
     try {
       final result = await ref.read(scanServiceProvider).scanImage(title, source: source);
       if (result != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Scan saved: ${result.title}')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Scan saved: ${result.title}')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
-  Future<void> _handleQrScan(BuildContext context, WidgetRef ref) async {
-    final source = await _showSourcePicker(context);
+  /// Triggers the QR code scanning and redirection flow.
+  Future<void> _handleQrScan(BuildContext context, WidgetRef ref, AppLocalization l10n) async {
+    final source = await _showSourcePicker(context, l10n);
     if (source == null) return;
 
     try {
       final code = await ref.read(qrScanServiceProvider).scanQr(source: source);
       if (code != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('QR Code Detected: $code')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('QR Code Detected: $code')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Scan Center"), centerTitle: true),
+      appBar: AppBar(title: Text(l10n.tr('scan_center')), centerTitle: true),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
-              _ScanOptionCard(
-                title: "Digitize Textbook",
-                icon: Icons.menu_book,
-                color: AppColors.primaryOrange,
-                onTap: () => _handleScan(context, ref, "Textbook"),
-              ),
+              // --- Scanning Options ---
+              _buildScanOption(l10n.tr('digitize_textbook'), Icons.menu_book, AppColors.primaryOrange, 
+                  () => _handleScan(context, ref, l10n.tr('digitize_textbook'), l10n)),
               const SizedBox(height: 16),
-              _ScanOptionCard(
-                title: "Handwritten Notes",
-                icon: Icons.edit_note,
-                color: AppColors.darkTeal,
-                onTap: () => _handleScan(context, ref, "Notes"),
-              ),
+              _buildScanOption(l10n.tr('handwritten_notes'), Icons.edit_note, AppColors.darkTeal, 
+                  () => _handleScan(context, ref, l10n.tr('handwritten_notes'), l10n)),
               const SizedBox(height: 16),
-              _ScanOptionCard(
-                title: "Quick ID Scan",
-                icon: Icons.badge,
-                color: Colors.brown,
-                onTap: () => _handleScan(context, ref, "ID Scan"),
-              ),
+              _buildScanOption(l10n.tr('quick_id_scan'), Icons.badge, Colors.brown, 
+                  () => _handleScan(context, ref, l10n.tr('quick_id_scan'), l10n)),
               const SizedBox(height: 16),
-              _ScanOptionCard(
-                title: "QR Code / Redirect",
-                icon: Icons.qr_code_scanner,
-                color: Colors.deepPurple,
-                onTap: () => _handleQrScan(context, ref),
-              ),
+              _buildScanOption(l10n.tr('qr_redirect'), Icons.qr_code_scanner, Colors.deepPurple, 
+                  () => _handleQrScan(context, ref, l10n)),
+              
               const SizedBox(height: 24),
-              // Scanner Tips Card
-              Card(
-                color: AppColors.lightOrange.withValues(alpha: 0.5),
-                child: const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.lightbulb_outline,
-                            color: AppColors.primaryOrange,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            "Scanner Tips",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        "• Ensure good, even lighting. Natural daylight works best.",
-                      ),
-                      Text(
-                        "• Keep the document flat and parallel to the camera.",
-                      ),
-                      Text("• Use a contrasting background like a dark table."),
-                      Text(
-                        "• Tap the screen to focus if the text appears blurry.",
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+
+              // --- Education/Tips Section ---
+              _buildTipsCard(l10n),
             ],
           ),
         ),
       ),
     );
   }
+
+  Widget _buildScanOption(String title, IconData icon, Color color, VoidCallback onTap) {
+    return _ScanOptionCard(title: title, icon: icon, color: color, onTap: onTap);
+  }
+
+  Widget _buildTipsCard(AppLocalization l10n) {
+    return Card(
+      color: AppColors.lightOrange.withValues(alpha: 0.5),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.lightbulb_outline, color: AppColors.primaryOrange),
+                const SizedBox(width: 8),
+                Text(l10n.tr('scanner_tips'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(l10n.tr('tip1')),
+            Text(l10n.tr('tip2')),
+            Text(l10n.tr('tip3')),
+            Text(l10n.tr('tip4')),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
+/// Helper component for image source selection.
 class _SourceOption extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
-  const _SourceOption({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+  const _SourceOption({required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -201,18 +172,14 @@ class _SourceOption extends StatelessWidget {
   }
 }
 
+/// Branded card for scan tool selection.
 class _ScanOptionCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
-  const _ScanOptionCard({
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
+  const _ScanOptionCard({required this.title, required this.icon, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -224,19 +191,13 @@ class _ScanOptionCard extends StatelessWidget {
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 16,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         leading: CircleAvatar(
           radius: 28,
           backgroundColor: color,
           child: Icon(icon, color: Colors.white, size: 30),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
+        title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
         trailing: const Icon(Icons.chevron_right),
       ),
     );

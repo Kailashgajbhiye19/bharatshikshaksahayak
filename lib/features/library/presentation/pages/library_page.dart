@@ -1,74 +1,74 @@
 import 'package:flutter/material.dart';
-import 'package:school_lookup_app/core/theme/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LibraryPage extends StatelessWidget {
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/localization/app_localization.dart';
+
+/// [LibraryPage] is a digital repository for teaching materials and guides.
+class LibraryPage extends ConsumerWidget {
   const LibraryPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(l10nProvider);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Teaching Resources"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(l10n.tr('teaching_resources')), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            "My Subjects",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
+          // --- Category Header ---
+          _buildHeader(l10n.tr('my_subjects')),
           const SizedBox(height: 16),
+          
+          // --- Subject Folders ---
           _ResourceFolder(
-            title: "Class 8 Science",
+            title: l10n.tr('class_8_science'),
             count: 12,
             color: AppColors.primaryOrange,
+            itemsLabel: l10n.tr('items'),
           ),
           _ResourceFolder(
-            title: "Class 7 Mathematics",
+            title: l10n.tr('class_7_math'),
             count: 8,
             color: AppColors.darkTeal,
+            itemsLabel: l10n.tr('items'),
           ),
+          
           const SizedBox(height: 24),
-          const Text(
-            "Syllabus & Guides",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
+          
+          // --- Document List ---
+          _buildHeader(l10n.tr('syllabus_guides')),
           const SizedBox(height: 16),
-          ListTile(
-            leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
-            title: const Text("NCERT Science Guide 2024"),
-            subtitle: const Text("PDF • 4.2 MB"),
-            trailing: IconButton(
-              icon: const Icon(Icons.download),
-              onPressed: () {},
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
-            title: const Text("Math Lesson Plans Term 1"),
-            subtitle: const Text("PDF • 2.8 MB"),
-            trailing: IconButton(
-              icon: const Icon(Icons.download),
-              onPressed: () {},
-            ),
-          ),
+          _buildFileTile(l10n.tr('ncert_guide'), "PDF • 4.2 MB"),
+          _buildFileTile(l10n.tr('math_lesson'), "PDF • 2.8 MB"),
         ],
       ),
     );
   }
+
+  Widget _buildHeader(String title) {
+    return Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold));
+  }
+
+  Widget _buildFileTile(String title, String subtitle) {
+    return ListTile(
+      leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: IconButton(icon: const Icon(Icons.download), onPressed: () {}),
+    );
+  }
 }
 
+/// Helper component for categorized resources.
 class _ResourceFolder extends StatelessWidget {
   final String title;
   final int count;
   final Color color;
+  final String itemsLabel;
 
-  const _ResourceFolder({
-    required this.title,
-    required this.count,
-    required this.color,
-  });
+  const _ResourceFolder({required this.title, required this.count, required this.color, required this.itemsLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -80,9 +80,13 @@ class _ResourceFolder extends StatelessWidget {
           child: Icon(Icons.folder, color: color),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text("$count Items"),
+        subtitle: Text("$count $itemsLabel"),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () {},
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Opening $title details...")),
+          );
+        },
       ),
     );
   }

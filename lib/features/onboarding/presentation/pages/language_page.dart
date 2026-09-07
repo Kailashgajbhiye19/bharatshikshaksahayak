@@ -4,15 +4,25 @@ import 'package:hive/hive.dart';
 
 import '../../../../core/theme/app_theme.dart';
 
-class LanguagePage extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/localization/app_localization.dart';
+
+class LanguagePage extends ConsumerStatefulWidget {
   const LanguagePage({super.key});
 
   @override
-  State<LanguagePage> createState() => _LanguagePageState();
+  ConsumerState<LanguagePage> createState() => _LanguagePageState();
 }
 
-class _LanguagePageState extends State<LanguagePage> {
-  String _selectedLang = Hive.box('settings').get('language', defaultValue: "en");
+class _LanguagePageState extends ConsumerState<LanguagePage> {
+  late String _selectedLang;
+  
+  @override
+  void initState() {
+    super.initState();
+    _selectedLang = Hive.box('settings').get('language', defaultValue: "en");
+  }
+
   final List<Map<String, String>> _languages = [
     {"code": "en", "label": "English", "sub": "Selected by default"},
     {"code": "hi", "label": "हिन्दी", "sub": "Hindi"},
@@ -100,6 +110,7 @@ class _LanguagePageState extends State<LanguagePage> {
                 child: ElevatedButton(
                   onPressed: () async {
                     await Hive.box('settings').put('language', _selectedLang);
+                    ref.read(localeProvider.notifier).state = _selectedLang;
                     if (context.mounted) {
                       context.go('/login');
                     }
