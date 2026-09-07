@@ -17,9 +17,7 @@ class HistoryNotifier extends StateNotifier<List<ScanResult>> {
     state = _repository.getScanHistory();
   }
 
-  Future<void> syncAndClear() async {
-    // In a real app, you would upload to a server here.
-    // Requirement 4: Provide a way to "Upload/Sync" data, which then clears the local history and starts a fresh 30-day cycle.
+  Future<void> clearAllLocalData() async {
     await _repository.clearHistory();
     loadHistory();
   }

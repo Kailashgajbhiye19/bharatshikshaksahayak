@@ -21,30 +21,83 @@ class HistoryPage extends ConsumerWidget {
             icon: const Icon(Icons.sync),
             tooltip: 'Upload & Clear Sync',
             onPressed: () async {
-              final confirmed = await showDialog<bool>(
+              // 1. Initial Confirmation
+              final startSync = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Sync Data'),
                   content: const Text(
-                      'This will upload your data and clear local history. Continue?'),
+                      'Do you want to start uploading your documents to the server?'),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(context, false),
                         child: const Text('Cancel')),
                     TextButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Sync')),
+                        child: const Text('Start Upload')),
                   ],
                 ),
               );
 
-              if (confirmed == true) {
-                await ref.read(historyProvider.notifier).syncAndClear();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('History synced and cleared successfully.')),
-                  );
+              if (startSync != true) return;
+
+              // 2. Simulate Upload Process
+              if (context.mounted) {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const AlertDialog(
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 20),
+                        Text("Uploading documents..."),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              // Simulate network delay
+              await Future.delayed(const Duration(seconds: 3));
+
+              if (context.mounted) {
+                Navigator.pop(context); // Close "Uploading" dialog
+              }
+
+              // 3. User confirmation of successful upload
+              if (context.mounted) {
+                final uploadSuccessful = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Upload Successful?'),
+                    content: const Text(
+                        'Please confirm if all your documents and images were uploaded successfully. \n\nWarning: Confirming will permanently delete local history to start a fresh 30-day cycle.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('No, Not Yet'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                        child: const Text('Confirm & Delete Local'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (uploadSuccessful == true) {
+                  await ref.read(historyProvider.notifier).clearAllLocalData();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Local history cleared successfully.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
                 }
               }
             },
