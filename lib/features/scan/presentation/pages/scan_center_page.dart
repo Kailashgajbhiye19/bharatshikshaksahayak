@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/localization/app_localization.dart';
 import '../providers/scan_provider.dart';
 import '../providers/qr_scan_service.dart';
+import './scan_preview_page.dart';
 
 /// [ScanCenterPage] provides various digitization tools for teachers.
 /// It supports OCR (Text Recognition) and QR Code scanning with live camera or gallery upload.
@@ -51,15 +52,60 @@ class ScanCenterPage extends ConsumerWidget {
     if (source == null) return;
 
     try {
-      final result = await ref.read(scanServiceProvider).scanImage(title, source: source);
-      if (result != null && context.mounted) {
+      final service = ref.read(scanServiceProvider);
+      
+      // 1. Pick Image (includes permission and storage checks)
+      final XFile? image = await service.pickImage(source: source);
+      if (image == null) return;
+
+      if (!context.mounted) return;
+
+      // 2. Navigate to Preview
+      final bool? confirmed = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ScanPreviewPage(imagePath: image.path, title: title),
+        ),
+      );
+
+      if (confirmed != true) return;
+
+      // 3. Process and Save
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      final result = await service.processAndSave(title, image.path);
+
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Scan saved: ${result.title}')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        _showErrorDialog(context, e.toString());
       }
     }
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Action Required"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Triggers the QR code scanning and redirection flow.

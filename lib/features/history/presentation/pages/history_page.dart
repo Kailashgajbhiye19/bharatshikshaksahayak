@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/history_provider.dart';
 import '../../../../core/localization/app_localization.dart';
+import '../../../../core/util/gallery_viewer.dart';
 
 import 'package:school_lookup_app/features/scan/domain/models/scan_result.dart';
 
@@ -217,11 +218,27 @@ class HistoryPage extends ConsumerWidget {
                   padding: const EdgeInsets.all(16),
                   children: [
                     if (File(item.imagePath).existsSync())
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(item.imagePath),
-                          fit: BoxFit.contain,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GalleryViewer(
+                                imagePath: item.imagePath,
+                                title: item.title,
+                              ),
+                            ),
+                          );
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Hero(
+                            tag: item.imagePath,
+                            child: Image.file(
+                              File(item.imagePath),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                         ),
                       ),
                     const SizedBox(height: 24),

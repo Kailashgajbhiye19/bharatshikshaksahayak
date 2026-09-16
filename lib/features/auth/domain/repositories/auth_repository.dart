@@ -53,10 +53,21 @@ class AuthRepository {
 
   Future<void> _saveSession(Map<String, dynamic> response) async {
     final token = response['token'];
-    if (token is! String || token.isEmpty) throw const FormatException('The server did not return an authentication token');
+    final userData = response['user'] as Map<String, dynamic>?;
+
+    if (token is! String || token.isEmpty) {
+      throw const FormatException('The server did not return an authentication token');
+    }
+
     final settings = Hive.box('settings');
     await settings.put('authToken', token);
     await settings.put('isLoggedIn', true);
+
+    if (userData != null) {
+      await settings.put('userEmail', userData['email']);
+      await settings.put('employeeId', userData['employeeId']);
+      await settings.put('fullName', userData['fullName']);
+    }
   }
 
   Failure _failureFromDio(DioException error) {
@@ -76,6 +87,9 @@ class AuthRepository {
       final settings = Hive.box('settings');
       await settings.put('isLoggedIn', false);
       await settings.delete('authToken');
+      await settings.delete('userEmail');
+      await settings.delete('employeeId');
+      await settings.delete('fullName');
     }
   }
 }

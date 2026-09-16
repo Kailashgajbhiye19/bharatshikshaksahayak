@@ -11,6 +11,7 @@ import '../../../library/presentation/pages/library_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 import '../../../scan/presentation/pages/scan_center_page.dart';
 import '../../../history/presentation/pages/history_page.dart';
+import '../../../../features/sync/domain/services/sync_service.dart';
 
 /// [HomePage] is the main navigation hub of the application.
 /// It uses a [BottomNavigationBar] to switch between core features.
@@ -41,6 +42,11 @@ class _HomePageState extends ConsumerState<HomePage> {
       const HistoryPage(),
       const ProfilePage(),
     ];
+
+    // Trigger monthly sync check on app load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(syncServiceProvider).performSyncIfNeeded();
+    });
   }
 
   @override

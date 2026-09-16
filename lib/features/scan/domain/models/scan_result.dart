@@ -19,11 +19,19 @@ class ScanResult extends HiveObject {
   @HiveField(4)
   final String imagePath;
 
+  @HiveField(5)
+  final bool isSynced;
+
+  @HiveField(6)
+  final String? userId;
+
   ScanResult({
     required this.id,
     required this.title,
     required this.text,
     required this.date,
     required this.imagePath,
+    this.isSynced = false,
+    this.userId,
   });
 }
