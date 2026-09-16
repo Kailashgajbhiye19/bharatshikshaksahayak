@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:hive/hive.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/util/ui_utils.dart';
 import '../../../../core/util/app_logger.dart';
@@ -26,6 +28,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _passwordController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _loadRememberedUser();
+  }
+
+  void _loadRememberedUser() {
+    final settingsBox = Hive.box('settings');
+    final bool rememberMe = settingsBox.get('rememberMe', defaultValue: false);
+    if (rememberMe) {
+      final String? savedId = settingsBox.get('rememberedId');
+      if (savedId != null) {
+        setState(() {
+          _rememberMe = true;
+          _idController.text = savedId;
+        });
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _idController.dispose();
     _passwordController.dispose();
@@ -40,7 +62,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     // Call Repository
     final failure = await ref.read(authRepositoryProvider).login(
-      email: _idController.text, 
+      identifier: _idController.text,
       password: _passwordController.text
     );
 
@@ -49,6 +71,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
       if (failure == null) {
         AppLogger.info("Login successful");
+        
+        // Save Remember Me preference
+        final settingsBox = Hive.box('settings');
+        await settingsBox.put('rememberMe', _rememberMe);
+        if (_rememberMe) {
+          await settingsBox.put('rememberedId', _idController.text);
+        } else {
+          await settingsBox.delete('rememberedId');
+        }
+
+        if (!mounted) return;
         context.go('/home');
       } else {
         AppLogger.warning("Login failed: ${failure.message}");
@@ -126,7 +159,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       children: [
         TextFormField(
           controller: _idController,
-          keyboardType: TextInputType.emailAddress,
+          keyboardType: TextInputType.text,
           decoration: const InputDecoration(
             labelText: "Teacher ID or Email",
             prefixIcon: Icon(Icons.person_outline),

@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for real API calls in release builds as well as debug builds. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="school_lookup_app"
         android:name="${applicationName}"

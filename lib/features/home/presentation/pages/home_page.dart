@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hive/hive.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/localization/app_localization.dart';
@@ -146,9 +147,12 @@ class _HomePageState extends ConsumerState<HomePage> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.tr('cancel'))),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.go('/login');
+            onPressed: () async {
+              await Hive.box('settings').put('isLoggedIn', false);
+              if (context.mounted) {
+                Navigator.pop(context);
+                context.go('/login');
+              }
             },
             child: Text(l10n.tr('logout'), style: const TextStyle(color: Colors.red)),
           ),
@@ -235,10 +239,11 @@ class _DashboardTab extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
+        color: AppColors.primaryOrange, // Fallback background color
         image: const DecorationImage(
           image: NetworkImage('https://images.unsplash.com/photo-1580582932707-520aed937b7b'),
           fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken),
+          colorFilter: ColorFilter.mode(Colors.black45, BlendMode.darken),
         ),
       ),
       child: Padding(

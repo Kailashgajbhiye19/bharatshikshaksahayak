@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/localization/app_localization.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
 
 /// [ProfilePage] displays teacher account information and settings.
 class ProfilePage extends ConsumerWidget {
@@ -37,7 +38,7 @@ class ProfilePage extends ConsumerWidget {
             const SizedBox(height: 20),
             
             // --- Settings & Preferences ---
-            _buildSettingsList(context, l10n),
+            _buildSettingsList(context, l10n, ref),
           ],
         ),
       ),
@@ -59,7 +60,7 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingsList(BuildContext context, AppLocalization l10n) {
+  Widget _buildSettingsList(BuildContext context, AppLocalization l10n, WidgetRef ref) {
     return Column(
       children: [
         ListTile(
@@ -91,13 +92,13 @@ class ProfilePage extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.logout, color: Colors.red),
           title: Text(l10n.tr('logout'), style: const TextStyle(color: Colors.red)),
-          onTap: () => _showLogoutDialog(context, l10n),
+          onTap: () => _showLogoutDialog(context, l10n, ref),
         ),
       ],
     );
   }
 
-  void _showLogoutDialog(BuildContext context, AppLocalization l10n) {
+  void _showLogoutDialog(BuildContext context, AppLocalization l10n, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -106,9 +107,12 @@ class ProfilePage extends ConsumerWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.tr('cancel'))),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.go('/login');
+              onPressed: () async {
+              await ref.read(authRepositoryProvider).logout();
+              if (context.mounted) {
+                Navigator.pop(context);
+                context.go('/login');
+              }
             },
             child: Text(l10n.tr('logout'), style: const TextStyle(color: Colors.red)),
           ),

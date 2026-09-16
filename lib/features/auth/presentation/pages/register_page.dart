@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/util/ui_utils.dart';
+import '../../domain/repositories/auth_repository.dart';
 
 /// [RegisterPage] allows new teachers to join the platform.
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   // --- UI State ---
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
@@ -19,6 +22,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // --- Controllers ---
   final _nameController = TextEditingController();
+  final _employeeIdController = TextEditingController();
+  final _schoolNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -26,6 +31,8 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _employeeIdController.dispose();
+    _schoolNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -38,20 +45,21 @@ class _RegisterPageState extends State<RegisterPage> {
 
     setState(() => _isLoading = true);
 
-    // -------------------------------------------------------------------------
-    // BACKEND INTEGRATION POINT:
-    // Call your AuthRepository to create a new user.
-    // Example: await ref.read(authProvider.notifier).register(name, email, pass);
-    // -------------------------------------------------------------------------
-
-    await Future.delayed(const Duration(seconds: 1)); // Simulation
+    final failure = await ref.read(authRepositoryProvider).register(
+      employeeId: _employeeIdController.text,
+      fullName: _nameController.text,
+      schoolName: _schoolNameController.text,
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
 
     if (mounted) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Account created! Please login.")),
-      );
-      context.go('/login');
+      if (failure == null) {
+        context.go('/home');
+      } else {
+        UIUtils.showErrorSnackBar(context, failure.message);
+      }
     }
   }
 
@@ -91,15 +99,39 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                         const SizedBox(height: 16),
 
+                        // The backend uses this unique value to identify the teacher.
+                        TextFormField(
+                          controller: _employeeIdController,
+                          decoration: const InputDecoration(
+                            labelText: "Teacher ID",
+                            prefixIcon: Icon(Icons.badge_outlined),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                          ),
+                          validator: (v) => (v == null || v.trim().length < 3) ? "Enter a valid teacher ID" : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        TextFormField(
+                          controller: _schoolNameController,
+                          decoration: const InputDecoration(
+                            labelText: "School Name",
+                            prefixIcon: Icon(Icons.school_outlined),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                          ),
+                          validator: (v) => (v == null || v.trim().length < 2) ? "Enter your school name" : null,
+                        ),
+                        const SizedBox(height: 16),
+
                         // --- Email/ID Field ---
                         TextFormField(
                           controller: _emailController,
                           decoration: const InputDecoration(
-                            labelText: "Teacher ID / Email",
+                            labelText: "Email Address",
                             prefixIcon: Icon(Icons.email_outlined),
                             border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                           ),
-                          validator: (v) => (v == null || v.isEmpty) ? "Enter your ID or Email" : null,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (v) => (v == null || !v.contains('@')) ? "Enter a valid email" : null,
                         ),
                         const SizedBox(height: 16),
 

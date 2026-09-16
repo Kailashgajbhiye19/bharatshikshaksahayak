@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import 'package:hive/hive.dart';
 import '../../../../core/error/failures.dart';
+import '../../../../core/network/api_client.dart';
 
 final authRepositoryProvider = Provider((ref) => AuthRepository());
 
@@ -8,34 +11,71 @@ final authRepositoryProvider = Provider((ref) => AuthRepository());
 class AuthRepository {
   /// Attempts to log in a user.
   /// Returns null on success, or a [Failure] on error.
-  Future<Failure?> login({required String email, required String password}) async {
+  Future<Failure?> login({required String identifier, required String password}) async {
     try {
-      // -----------------------------------------------------------------------
-      // PRODUCTION TIP: 
-      // 1. Check connectivity: if (!await networkInfo.isConnected) return NetworkFailure();
-      // 2. Call API: await remoteDataSource.login(email, password);
-      // 3. Cache token: await localDataSource.saveToken(token);
-      // -----------------------------------------------------------------------
-      
-      await Future.delayed(const Duration(seconds: 1)); // Simulate network
-      
-      // Basic mock check
-      if (email == "error@example.com") {
-        return AuthFailure("Invalid credentials. Please try again.");
-      }
-      
+      final data = <String, dynamic>{
+        identifier.contains('@') ? 'email' : 'employeeId': identifier.trim(),
+        'password': password,
+      };
+      final response = await ApiClient.instance.post<Map<String, dynamic>>('/auth/login', data: data);
+      await _saveSession(response.data!);
       return null;
-    } catch (e) {
+    } on DioException catch (error) {
+      return _failureFromDio(error);
+    } catch (_) {
       return ServerFailure();
     }
   }
 
-  Future<Failure?> register({required String name, required String email, required String password}) async {
+  Future<Failure?> register({
+    required String employeeId,
+    required String fullName,
+    required String schoolName,
+    required String email,
+    required String password,
+  }) async {
     try {
-      await Future.delayed(const Duration(seconds: 1));
+      final response = await ApiClient.instance.post<Map<String, dynamic>>('/auth/register', data: {
+        'employeeId': employeeId.trim(),
+        'fullName': fullName.trim(),
+        'schoolName': schoolName.trim(),
+        'email': email.trim(),
+        'password': password,
+      });
+      await _saveSession(response.data!);
       return null;
-    } catch (e) {
+    } on DioException catch (error) {
+      return _failureFromDio(error);
+    } catch (_) {
       return ServerFailure();
+    }
+  }
+
+  Future<void> _saveSession(Map<String, dynamic> response) async {
+    final token = response['token'];
+    if (token is! String || token.isEmpty) throw const FormatException('The server did not return an authentication token');
+    final settings = Hive.box('settings');
+    await settings.put('authToken', token);
+    await settings.put('isLoggedIn', true);
+  }
+
+  Failure _failureFromDio(DioException error) {
+    final body = error.response?.data;
+    if (body is Map && body['message'] is String) return AuthFailure(body['message'] as String);
+    if (error.type == DioExceptionType.connectionTimeout || error.type == DioExceptionType.connectionError) return NetworkFailure();
+    return ServerFailure();
+  }
+
+  /// Clears both the browser's HTTP-only session cookie and the device token cache.
+  Future<void> logout() async {
+    try {
+      await ApiClient.instance.post<void>('/auth/logout');
+    } on DioException {
+      // Local logout must still succeed if the device is temporarily offline.
+    } finally {
+      final settings = Hive.box('settings');
+      await settings.put('isLoggedIn', false);
+      await settings.delete('authToken');
     }
   }
 }

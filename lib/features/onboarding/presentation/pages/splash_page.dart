@@ -49,8 +49,18 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
       // 3. Robust Navigation
       if (mounted) {
-        final language = Hive.box('settings').get('language');
-        final targetRoute = language != null ? '/login' : '/onboarding';
+        final settings = Hive.box('settings');
+        final language = settings.get('language');
+        final isLoggedIn = settings.get('isLoggedIn', defaultValue: false);
+
+        String targetRoute;
+        if (isLoggedIn) {
+          targetRoute = '/home';
+        } else if (language != null) {
+          targetRoute = '/login';
+        } else {
+          targetRoute = '/onboarding';
+        }
 
         GoRouter.of(context).go(targetRoute);
       }
