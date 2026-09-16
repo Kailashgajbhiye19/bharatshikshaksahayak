@@ -4,20 +4,34 @@ import 'package:path_provider/path_provider.dart';
 import 'app_logger.dart';
 
 class StorageUtils {
+  static const String publicFolderName = 'Bharat Shikshak Sahayak';
+
   /// Requests necessary permissions for scanning and storage.
   static Future<bool> requestPermissions() async {
+    // 1. Basic Camera and Storage permissions
     Map<Permission, PermissionStatus> statuses = await [
       Permission.camera,
       Permission.storage,
-      // For Android 13+, storage permission is split into photos, videos, etc.
-      // But path_provider mostly uses internal app storage which doesn't always need these.
-      // However, the user specifically asked to access storage of the phone.
       Permission.photos,
     ].request();
 
     bool cameraGranted = statuses[Permission.camera]?.isGranted ?? false;
+    
+    // 2. Advanced Storage Permission for Android 11+ (MANAGE_EXTERNAL_STORAGE)
+    // This is required to create a folder at the root of internal storage.
+    if (Platform.isAndroid) {
+      if (!await Permission.manageExternalStorage.isGranted) {
+        final status = await Permission.manageExternalStorage.request();
+        if (!status.isGranted) {
+          AppLogger.warning("MANAGE_EXTERNAL_STORAGE permission denied.");
+          // We can still proceed if Permission.storage is granted, but folder creation might fail at root.
+        }
+      }
+    }
+
     bool storageGranted = (statuses[Permission.storage]?.isGranted ?? false) || 
-                          (statuses[Permission.photos]?.isGranted ?? false);
+                          (statuses[Permission.photos]?.isGranted ?? false) ||
+                          (Platform.isAndroid && await Permission.manageExternalStorage.isGranted);
 
     AppLogger.info("Permissions status: Camera: $cameraGranted, Storage: $storageGranted");
     
@@ -50,9 +64,25 @@ class StorageUtils {
     }
   }
 
-  /// Copies a file to a permanent location in the app's documents directory.
+  /// Copies a file to a permanent location in the public "Bharat Shikshak Sahayak" folder.
   static Future<String> saveImagePermanently(String tempPath) async {
-    final directory = await getApplicationDocumentsDirectory();
+    Directory? directory;
+
+    if (Platform.isAndroid) {
+      // Try to get the root of internal storage
+      // /storage/emulated/0/
+      directory = Directory('/storage/emulated/0/$publicFolderName');
+    } else {
+      // Fallback for iOS/other platforms
+      final docs = await getApplicationDocumentsDirectory();
+      directory = Directory('${docs.path}/$publicFolderName');
+    }
+
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+      AppLogger.info("Created public folder: ${directory.path}");
+    }
+
     final name = tempPath.split('/').last;
     final permanentPath = '${directory.path}/$name';
     
