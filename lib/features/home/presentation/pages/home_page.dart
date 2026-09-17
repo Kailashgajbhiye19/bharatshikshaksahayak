@@ -243,9 +243,10 @@ class _DashboardTab extends ConsumerWidget {
 
   Widget _buildHeroCard(AppLocalization l10n) {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: AppColors.primaryOrange, // Fallback background color
+        color: AppColors.primaryOrange,
         image: const DecorationImage(
           image: NetworkImage('https://images.unsplash.com/photo-1580582932707-520aed937b7b'),
           fit: BoxFit.cover,

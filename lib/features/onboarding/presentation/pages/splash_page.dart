@@ -43,16 +43,10 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     // Ensure the widget tree is fully built before starting logic
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        // 2. Precache in background (don't wait for it)
-        precacheImage(
-          const NetworkImage('https://images.unsplash.com/photo-1580582932707-520aed937b7b'),
-          context,
-        ).catchError((_) {});
-
-        // 3. Minimum display time for the animation (2 seconds)
+        // 2. Minimum display time for the animation (2 seconds)
         await Future.delayed(const Duration(seconds: 2));
 
-        // 4. Robust Navigation
+        // 3. Robust Navigation
         if (mounted) {
           final settings = Hive.box('settings');
           final language = settings.get('language');

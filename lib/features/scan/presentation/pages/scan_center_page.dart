@@ -255,16 +255,19 @@ class _ScanOptionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color, width: 2),
       ),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        leading: CircleAvatar(
-          radius: 28,
-          backgroundColor: color,
-          child: Icon(icon, color: Colors.white, size: 30),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          onTap: onTap,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          leading: CircleAvatar(
+            radius: 28,
+            backgroundColor: color,
+            child: Icon(icon, color: Colors.white, size: 30),
+          ),
+          title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          trailing: const Icon(Icons.chevron_right),
         ),
-        title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-        trailing: const Icon(Icons.chevron_right),
       ),
     );
   }

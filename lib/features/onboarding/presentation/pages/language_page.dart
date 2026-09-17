@@ -73,33 +73,36 @@ class _LanguagePageState extends ConsumerState<LanguagePage> {
                         width: 2,
                       ),
                     ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: _selectedLang == lang["code"]
-                            ? AppColors.primaryOrange
-                            : Colors.grey.shade200,
-                        child: Text(
-                          lang["label"]!.substring(0, 1),
-                          style: TextStyle(
-                            color: _selectedLang == lang["code"]
-                                ? Colors.white
-                                : Colors.black,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: _selectedLang == lang["code"]
+                              ? AppColors.primaryOrange
+                              : Colors.grey.shade200,
+                          child: Text(
+                            lang["label"]!.substring(0, 1),
+                            style: TextStyle(
+                              color: _selectedLang == lang["code"]
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
                           ),
                         ),
+                        title: Text(
+                          lang["label"]!,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(lang["sub"]!),
+                        trailing: _selectedLang == lang["code"]
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: AppColors.primaryOrange,
+                              )
+                            : null,
+                        onTap: () =>
+                            setState(() => _selectedLang = lang["code"]!),
                       ),
-                      title: Text(
-                        lang["label"]!,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(lang["sub"]!),
-                      trailing: _selectedLang == lang["code"]
-                          ? const Icon(
-                              Icons.check_circle,
-                              color: AppColors.primaryOrange,
-                            )
-                          : null,
-                      onTap: () =>
-                          setState(() => _selectedLang = lang["code"]!),
                     ),
                   ),
                 ),
