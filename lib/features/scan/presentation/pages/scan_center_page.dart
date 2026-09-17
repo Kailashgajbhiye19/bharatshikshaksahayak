@@ -7,6 +7,7 @@ import '../../../../core/localization/app_localization.dart';
 import '../providers/scan_provider.dart';
 import '../providers/qr_scan_service.dart';
 import './scan_preview_page.dart';
+import './scan_result_page.dart';
 
 /// [ScanCenterPage] provides various digitization tools for teachers.
 /// It supports OCR (Text Recognition) and QR Code scanning with live camera or gallery upload.
@@ -14,7 +15,9 @@ class ScanCenterPage extends ConsumerWidget {
   const ScanCenterPage({super.key});
 
   /// Displays a selection menu for image source (Camera vs Gallery).
-  Future<ImageSource?> _showSourcePicker(BuildContext context, AppLocalization l10n) async {
+  Future<ImageSource?> _showSourcePicker(BuildContext context, {bool cameraOnly = false}) async {
+    if (cameraOnly) return ImageSource.camera;
+
     return await showModalBottomSheet<ImageSource>(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -47,8 +50,8 @@ class ScanCenterPage extends ConsumerWidget {
   }
 
   /// Triggers the document/text scanning flow.
-  Future<void> _handleScan(BuildContext context, WidgetRef ref, String title, AppLocalization l10n) async {
-    final source = await _showSourcePicker(context, l10n);
+  Future<void> _handleScan(BuildContext context, WidgetRef ref, String title, {bool cameraOnly = false}) async {
+    final source = await _showSourcePicker(context, cameraOnly: cameraOnly);
     if (source == null) return;
 
     bool needsScan = true;
@@ -86,7 +89,14 @@ class ScanCenterPage extends ConsumerWidget {
 
           if (context.mounted) {
             Navigator.pop(context); // Close loading dialog
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Scan saved: ${result.title}')));
+            
+            // 4. Navigate to Result Page
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ScanResultPage(result: result),
+              ),
+            );
           }
         } else if (confirmed == null) {
           // User backed out of preview page using system back button
@@ -148,13 +158,13 @@ class ScanCenterPage extends ConsumerWidget {
             children: [
               // --- Scanning Options ---
               _buildScanOption(l10n.tr('digitize_textbook'), Icons.menu_book, AppColors.primaryOrange, 
-                  () => _handleScan(context, ref, l10n.tr('digitize_textbook'), l10n)),
+                  () => _handleScan(context, ref, l10n.tr('digitize_textbook'))),
               const SizedBox(height: 16),
               _buildScanOption(l10n.tr('handwritten_notes'), Icons.edit_note, AppColors.darkTeal, 
-                  () => _handleScan(context, ref, l10n.tr('handwritten_notes'), l10n)),
+                  () => _handleScan(context, ref, l10n.tr('handwritten_notes'))),
               const SizedBox(height: 16),
               _buildScanOption(l10n.tr('quick_id_scan'), Icons.badge, Colors.brown, 
-                  () => _handleScan(context, ref, l10n.tr('quick_id_scan'), l10n)),
+                  () => _handleScan(context, ref, l10n.tr('quick_id_scan'), cameraOnly: true)),
               const SizedBox(height: 16),
               _buildScanOption(l10n.tr('qr_redirect'), Icons.qr_code_scanner, Colors.deepPurple, 
                   () => _handleQrScan(context, ref, l10n)),
