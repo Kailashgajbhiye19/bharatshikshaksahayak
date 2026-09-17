@@ -130,7 +130,7 @@ class ScanCenterPage extends ConsumerWidget {
 
   /// Triggers the QR code scanning and redirection flow.
   Future<void> _handleQrScan(BuildContext context, WidgetRef ref, AppLocalization l10n) async {
-    final source = await _showSourcePicker(context, l10n);
+    final source = await _showSourcePicker(context);
     if (source == null) return;
 
     try {
