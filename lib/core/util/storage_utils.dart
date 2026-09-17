@@ -41,22 +41,7 @@ class StorageUtils {
   /// Checks if there is sufficient storage space (threshold in MB).
   static Future<bool> hasSufficientStorage({int thresholdMB = 50}) async {
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      // On Android, we can check free space using stat.
-      // This is a rough estimation.
-      final stat = await Directory(directory.path).stat();
-      // stat doesn't directly give free space on all platforms easily in pure Dart.
-      // For a truly accurate check, a platform channel or a specific package might be needed.
-      // However, we can use a simpler approach for this task.
-      
-      // Since path_provider/dart:io doesn't give disk space directly, 
-      // in a real app we'd use a package like 'disk_space_2' or similar.
-      // For now, we will return true but log the intent, or assume it's fine 
-      // unless we want to add another dependency.
-      
-      // Let's assume for this implementation we will use a basic check or 
-      // just provide the hook for the alert.
-      
+      // In a real app, we'd use a package like 'disk_space_2' or similar to check disk space.
       return true; 
     } catch (e) {
       AppLogger.error("Error checking storage space", e);
@@ -68,27 +53,57 @@ class StorageUtils {
   static Future<String> saveImagePermanently(String tempPath) async {
     Directory? directory;
 
-    if (Platform.isAndroid) {
-      // Try to get the root of internal storage
-      // /storage/emulated/0/
-      directory = Directory('/storage/emulated/0/$publicFolderName');
-    } else {
-      // Fallback for iOS/other platforms
+    try {
+      if (Platform.isAndroid) {
+        // Try to get the root of internal storage
+        // /storage/emulated/0/
+        directory = Directory('/storage/emulated/0/$publicFolderName');
+        
+        // Check if we can write to this directory. If not, fallback to internal app storage.
+        if (!await _canWriteToDirectory(directory)) {
+          final docs = await getApplicationDocumentsDirectory();
+          directory = Directory('${docs.path}/$publicFolderName');
+        }
+      } else {
+        // Fallback for iOS/other platforms
+        final docs = await getApplicationDocumentsDirectory();
+        directory = Directory('${docs.path}/$publicFolderName');
+      }
+
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+        AppLogger.info("Created folder: ${directory.path}");
+      }
+
+      final name = tempPath.split('/').last;
+      final permanentPath = '${directory.path}/$name';
+      
+      final tempFile = File(tempPath);
+      final permanentFile = await tempFile.copy(permanentPath);
+      
+      return permanentFile.path;
+    } catch (e) {
+      AppLogger.error("Failed to save image permanently, using temp path", e);
+      // Fallback to internal app storage if public folder fails
       final docs = await getApplicationDocumentsDirectory();
-      directory = Directory('${docs.path}/$publicFolderName');
+      final name = tempPath.split('/').last;
+      final fallbackPath = '${docs.path}/$name';
+      await File(tempPath).copy(fallbackPath);
+      return fallbackPath;
     }
+  }
 
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-      AppLogger.info("Created public folder: ${directory.path}");
+  static Future<bool> _canWriteToDirectory(Directory dir) async {
+    try {
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      final testFile = File('${dir.path}/.test_write');
+      await testFile.writeAsString('test');
+      await testFile.delete();
+      return true;
+    } catch (_) {
+      return false;
     }
-
-    final name = tempPath.split('/').last;
-    final permanentPath = '${directory.path}/$name';
-    
-    final tempFile = File(tempPath);
-    final permanentFile = await tempFile.copy(permanentPath);
-    
-    return permanentFile.path;
   }
 }

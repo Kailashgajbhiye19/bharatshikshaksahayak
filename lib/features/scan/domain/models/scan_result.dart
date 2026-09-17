@@ -20,7 +20,7 @@ class ScanResult extends HiveObject {
   final String imagePath;
 
   @HiveField(5)
-  final bool isSynced;
+  bool? isSynced;
 
   @HiveField(6)
   final String? userId;

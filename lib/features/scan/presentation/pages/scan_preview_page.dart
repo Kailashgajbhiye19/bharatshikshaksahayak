@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_theme.dart';
+import 'package:school_lookup_app/core/theme/app_theme.dart';
 
 class ScanPreviewPage extends StatelessWidget {
   final String imagePath;

@@ -53,7 +53,7 @@ class AuthRepository {
 
   Future<void> _saveSession(Map<String, dynamic> response) async {
     final token = response['token'];
-    final userData = response['user'] as Map<String, dynamic>?;
+    final userData = response['user'];
 
     if (token is! String || token.isEmpty) {
       throw const FormatException('The server did not return an authentication token');
@@ -63,7 +63,7 @@ class AuthRepository {
     await settings.put('authToken', token);
     await settings.put('isLoggedIn', true);
 
-    if (userData != null) {
+    if (userData is Map<String, dynamic>) {
       await settings.put('userEmail', userData['email']);
       await settings.put('employeeId', userData['employeeId']);
       await settings.put('fullName', userData['fullName']);

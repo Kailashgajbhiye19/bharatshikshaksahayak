@@ -1,10 +1,9 @@
 import 'package:hive/hive.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../scan/domain/models/scan_result.dart';
-import '../../scan/data/repositories/scan_repository.dart';
+import 'package:school_lookup_app/features/scan/domain/models/scan_result.dart';
+import 'package:school_lookup_app/features/scan/data/repositories/scan_repository.dart';
 import '../../../../core/util/app_logger.dart';
-import '../../../../core/network/api_client.dart';
 
 final syncServiceProvider = Provider((ref) => SyncService(ref));
 
@@ -17,7 +16,7 @@ class SyncService {
   Future<void> performSyncIfNeeded() async {
     final settings = Hive.box('settings');
     final lastSyncStr = settings.get('lastSyncDate') as String?;
-    final lastSyncDate = lastSyncStr != null ? DateTime.parse(lastSyncStr) : null;
+    final lastSyncDate = lastSyncStr != null ? DateTime.tryParse(lastSyncStr) : null;
     
     final now = DateTime.now();
     
@@ -45,7 +44,7 @@ class SyncService {
     try {
       final repository = _ref.read(scanRepositoryProvider);
       final allScans = repository.getScanHistory();
-      final unsyncedScans = allScans.where((scan) => !scan.isSynced).toList();
+      final unsyncedScans = allScans.where((scan) => scan.isSynced != true).toList();
 
       if (unsyncedScans.isEmpty) {
         AppLogger.info("No new data to sync.");

@@ -22,7 +22,7 @@ class ScanResultAdapter extends TypeAdapter<ScanResult> {
       text: fields[2] as String,
       date: fields[3] as DateTime,
       imagePath: fields[4] as String,
-      isSynced: fields[5] as bool,
+      isSynced: fields[5] as bool?,
       userId: fields[6] as String?,
     );
   }

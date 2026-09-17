@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class SplashPage extends StatefulWidget {
@@ -36,33 +37,43 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   }
 
   Future<void> _initializeApp() async {
+    // 1. Remove native splash screen as soon as our Flutter app is ready
+    FlutterNativeSplash.remove();
+
     // Ensure the widget tree is fully built before starting logic
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // 1. Precache in background (don't wait for it)
-      precacheImage(
-        const NetworkImage('https://images.unsplash.com/photo-1580582932707-520aed937b7b'),
-        context,
-      ).catchError((_) {});
+      try {
+        // 2. Precache in background (don't wait for it)
+        precacheImage(
+          const NetworkImage('https://images.unsplash.com/photo-1580582932707-520aed937b7b'),
+          context,
+        ).catchError((_) {});
 
-      // 2. Minimum display time for the animation (2 seconds)
-      await Future.delayed(const Duration(seconds: 2));
+        // 3. Minimum display time for the animation (2 seconds)
+        await Future.delayed(const Duration(seconds: 2));
 
-      // 3. Robust Navigation
-      if (mounted) {
-        final settings = Hive.box('settings');
-        final language = settings.get('language');
-        final isLoggedIn = settings.get('isLoggedIn', defaultValue: false);
+        // 4. Robust Navigation
+        if (mounted) {
+          final settings = Hive.box('settings');
+          final language = settings.get('language');
+          final isLoggedIn = settings.get('isLoggedIn', defaultValue: false);
 
-        String targetRoute;
-        if (isLoggedIn) {
-          targetRoute = '/home';
-        } else if (language != null) {
-          targetRoute = '/login';
-        } else {
-          targetRoute = '/onboarding';
+          String targetRoute;
+          if (isLoggedIn) {
+            targetRoute = '/home';
+          } else if (language != null) {
+            targetRoute = '/login';
+          } else {
+            targetRoute = '/onboarding';
+          }
+
+          GoRouter.of(context).go(targetRoute);
         }
-
-        GoRouter.of(context).go(targetRoute);
+      } catch (e) {
+        // If anything fails, fallback to login/onboarding
+        if (mounted) {
+          GoRouter.of(context).go('/onboarding');
+        }
       }
     });
   }
