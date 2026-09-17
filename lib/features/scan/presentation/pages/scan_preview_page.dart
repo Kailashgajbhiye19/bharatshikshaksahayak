@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:photo_view/photo_view.dart';
 import 'package:school_lookup_app/core/theme/app_theme.dart';
 
 class ScanPreviewPage extends StatelessWidget {
@@ -24,11 +25,11 @@ class ScanPreviewPage extends StatelessWidget {
       body: Column(
         children: [
           Expanded(
-            child: Center(
-              child: Image.file(
-                File(imagePath),
-                fit: BoxFit.contain,
-              ),
+            child: PhotoView(
+              imageProvider: FileImage(File(imagePath)),
+              backgroundDecoration: const BoxDecoration(color: Colors.black),
+              minScale: PhotoViewComputedScale.contained,
+              maxScale: PhotoViewComputedScale.covered * 2.0,
             ),
           ),
           Container(

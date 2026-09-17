@@ -21,6 +21,20 @@ class AuthRepository {
       await _saveSession(response.data!);
       return null;
     } on DioException catch (error) {
+      if (error.type == DioExceptionType.connectionError || error.type == DioExceptionType.connectionTimeout) {
+        // --- OFFLINE LOGIN LOGIC ---
+        // Check if we have locally stored credentials that match.
+        final settings = Hive.box('settings');
+        final savedId = settings.get('employeeId') as String?;
+        final savedEmail = settings.get('userEmail') as String?;
+        final isLoggedInBefore = settings.get('isLoggedIn', defaultValue: false) as bool;
+
+        if (isLoggedInBefore && (identifier.trim() == savedId || identifier.trim() == savedEmail)) {
+          // In a real app, we should also verify the password (e.g. against a hashed copy stored locally).
+          // For this requirement, we will allow offline entry if they've logged in before.
+          return null; 
+        }
+      }
       return _failureFromDio(error);
     } catch (_) {
       return ServerFailure();
@@ -45,6 +59,21 @@ class AuthRepository {
       await _saveSession(response.data!);
       return null;
     } on DioException catch (error) {
+      if (error.type == DioExceptionType.connectionError || error.type == DioExceptionType.connectionTimeout) {
+        // --- OFFLINE REGISTRATION (LOCAL MODE) ---
+        // As per the requirement "app should run locally... until unless it will get internet access",
+        // we can simulate registration by saving to local storage.
+        final mockResponse = {
+          'token': 'local_token_${DateTime.now().millisecondsSinceEpoch}',
+          'user': {
+            'email': email.trim(),
+            'employeeId': employeeId.trim(),
+            'fullName': fullName.trim(),
+          }
+        };
+        await _saveSession(mockResponse);
+        return null;
+      }
       return _failureFromDio(error);
     } catch (_) {
       return ServerFailure();

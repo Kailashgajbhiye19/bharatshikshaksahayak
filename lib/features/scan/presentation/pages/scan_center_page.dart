@@ -51,43 +51,53 @@ class ScanCenterPage extends ConsumerWidget {
     final source = await _showSourcePicker(context, l10n);
     if (source == null) return;
 
-    try {
-      final service = ref.read(scanServiceProvider);
-      
-      // 1. Pick Image (includes permission and storage checks)
-      final XFile? image = await service.pickImage(source: source);
-      if (image == null) return;
+    bool needsScan = true;
+    while (needsScan) {
+      try {
+        final service = ref.read(scanServiceProvider);
+        
+        // 1. Pick Image (includes permission and storage checks)
+        final XFile? image = await service.pickImage(source: source);
+        if (image == null) return;
 
-      if (!context.mounted) return;
+        if (!context.mounted) return;
 
-      // 2. Navigate to Preview
-      final bool? confirmed = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ScanPreviewPage(imagePath: image.path, title: title),
-        ),
-      );
-
-      if (confirmed != true) return;
-
-      // 3. Process and Save
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(child: CircularProgressIndicator()),
+        // 2. Navigate to Preview
+        final bool? confirmed = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ScanPreviewPage(imagePath: image.path, title: title),
+          ),
         );
-      }
 
-      final result = await service.processAndSave(title, image.path);
+        if (confirmed == true) {
+          needsScan = false; // Exit loop and process
+          
+          // 3. Process and Save
+          if (context.mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(child: CircularProgressIndicator()),
+            );
+          }
 
-      if (context.mounted) {
-        Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Scan saved: ${result.title}')));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        _showErrorDialog(context, e.toString());
+          final result = await service.processAndSave(title, image.path);
+
+          if (context.mounted) {
+            Navigator.pop(context); // Close loading dialog
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Scan saved: ${result.title}')));
+          }
+        } else if (confirmed == null) {
+          // User backed out of preview page using system back button
+          needsScan = false;
+        }
+        // If confirmed is false (Retake), loop continues and triggers camera again
+      } catch (e) {
+        needsScan = false;
+        if (context.mounted) {
+          _showErrorDialog(context, e.toString());
+        }
       }
     }
   }
